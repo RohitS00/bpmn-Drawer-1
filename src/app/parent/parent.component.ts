@@ -55,11 +55,7 @@ function generateBpmnXml(bpmnData) {
       });
     }
   });
-  bpmnXml: string = '...'; // Your BPMN XML
 
-  downloadBpmn() {
-    const blob = new Blob([this.bpmnXml], { type: 'application/xml' });
-    FileSaver.saveAs(blob, 'bpmn.xml');
 }
 
 
