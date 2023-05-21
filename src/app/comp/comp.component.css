@@ -3,3 +3,10 @@
     width: 100%;
     position:absolute;
   }
+  .save-status {
+    margin-top: 10px;
+    color: green;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+  }

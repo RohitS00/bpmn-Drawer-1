@@ -12,7 +12,7 @@ import {
   EventEmitter
 } from '@angular/core';
 import {saveAs} from 'file-saver';
-
+import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { map, switchMap } from 'rxjs/operators';
 import * as BpmnJS from 'bpmn-js/dist/bpmn-modeler.production.min.js';
@@ -27,12 +27,23 @@ import * as FileSaver from 'file-saver';
 })
 export class CompComponent implements AfterContentInit, OnChanges, OnDestroy, OnInit {
 
+  imageName = '';
+  saveStatus = ''; // Variable to track the save status
+
   @ViewChild('ref', { static: true }) private el: ElementRef | undefined;
   @Input() public url?: string;
   @Output() private importDone: EventEmitter<any> = new EventEmitter();
   private bpmnJS: any = new BpmnJS();
+  accessIdValue(id: any) {
+    // Do something with the ID
+    this.url = 'http://localhost:8080/files/' + id.toString();
+  }
+  constructor(private http: HttpClient, private route: ActivatedRoute) {
+    this.route.params.subscribe(params => {
+      const id = params['id'];
+      this.accessIdValue(id);
 
-  constructor(private http: HttpClient) {
+    }),
     this.bpmnJS.on('import.done', ({ error }) => {
       if (!error) {
         this.bpmnJS.get('canvas').zoom('fit-viewport');
@@ -48,6 +59,20 @@ export class CompComponent implements AfterContentInit, OnChanges, OnDestroy, On
     if (this.url) {
       this.loadUrl(this.url);
     }
+    // ngOnInit(): void {
+    //   this.route.params.subscribe(params => {
+    //     const id = params['id'];
+    //     if (id) {
+    //       this.accessIdValue(id);
+    //     } else {
+    //       // If 'id' is not provided, set a default URL
+    //       this.url = 'your-default-url-here';
+    //       this.loadUrl(this.url);
+    //     }
+    //   });
+    // }
+    
+    
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -65,7 +90,7 @@ export class CompComponent implements AfterContentInit, OnChanges, OnDestroy, On
    * Load diagram from URL and emit completion event
    */
   loadUrl(url: string): Subscription {
-
+    console.log(url);
     return (
       this.http.get(url, { responseType: 'text' }).pipe(
         switchMap((xml: string) => this.importDiagram(xml)),
@@ -100,7 +125,29 @@ export class CompComponent implements AfterContentInit, OnChanges, OnDestroy, On
   async saveXML() {
     const { xml } =  await this.bpmnJS.saveXML({ format: true });
     console.log(xml);
-    var blob = new Blob([xml], {type: "text/plain;charset=utf-8"});
-    FileSaver.saveAs(blob, 'diagram.bpmn');
+    var blob = new Blob([xml], {type: "blob"});
+    // if (this.accessIdValue){
+    //   const fileName = this.imageName || 'diagram';
+    // }
+    // else{
+    const fileName = this.imageName || 'diagram';
+    // FileSaver.saveAs(blob, `${fileName}.bpmn`);
+    
+
+
+    let testData:FormData = new FormData();
+    testData.append("file", blob, fileName);
+    testData.append("name", fileName);
+    // testData.append(blob, string)
+    console.log(testData);
+    // this.http.post("http://localhost:8080/upload", testData).subscribe(response =>{
+    //   console.log(response);
+    // });
+    this.saveStatus = 'Saving...';
+    await this.http.post("http://localhost:8080/upload", testData).subscribe((response: any) => {
+      console.log(response);
+      this.saveStatus = 'Saved';
+    });
+
   }
 }
